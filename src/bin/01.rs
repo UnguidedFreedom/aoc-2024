@@ -17,30 +17,30 @@ pub fn part_one(input: &str) -> Option<u32> {
     first.sort();
     second.sort();
 
-    let mut result: u32 = 0;
-    for i in 0..first.len() {
-        result += first[i].abs_diff(second[i])
-    }
+    let result = first
+        .iter()
+        .zip(second.iter())
+        .map(|(&a, &b)| a.abs_diff(b))
+        .sum();
 
     Some(result)
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
-    let mut left: Vec<u32> = Vec::new();
+    let mut left: HashMap<u32, u32> = HashMap::new();
     let mut right: HashMap<u32, u32> = HashMap::new();
     for line in input.lines() {
         let (a, b): (u32, u32);
         scan!(line.bytes() => "{} {}", a, b);
-        left.push(a);
+        *left.entry(a).or_insert(0) += 1;
         *right.entry(b).or_insert(0) += 1;
     }
 
-    let mut result: u32 = 0;
-    for val in left.iter() {
-        if let Some(amount) = right.get(val) {
-            result += val * amount;
-        }
-    }
+    let result = left
+        .iter()
+        .filter_map(|(val, count)| Some(val * count * right.get(val)?))
+        .sum();
+
     Some(result)
 }
 
