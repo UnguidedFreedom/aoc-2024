@@ -2,52 +2,47 @@
 
 advent_of_code::solution!(2);
 
-fn is_report_safe<'a, I>(report: &'a I) -> bool
+fn is_report_safe<'a, I>(report: I) -> bool
 where
-    I: Iterator<Item = i32> + 'a + Clone,
+    I: Iterator<Item = &'a i32> + Clone,
 {
-    report
-        .clone()
-        .map_windows(|&[a, b, c]| (c - b, b - a))
-        .all(|(a, b)| {
-            (1..=3_i32).contains(&a.abs())
-                && (1..=3_i32).contains(&b.abs())
-                && a.signum() == b.signum()
-        })
+    let diffs = report.map_windows(|&[a, b]| b - a);
+
+    diffs.clone().all(|x| (1..=3).contains(&x.abs()))
+        && diffs
+            .map_windows(|[a, b]| a.signum() == b.signum())
+            .all(|x| x)
 }
 
-fn parse_report<'a>(report: &'a str) -> impl Iterator<Item = i32> + Clone + 'a {
-    report.split_whitespace().map(|s| s.parse::<i32>().unwrap())
+fn parse_report(report: &str) -> Vec<i32> {
+    report
+        .split_whitespace()
+        .map(|s| s.parse::<i32>().unwrap())
+        .collect::<Vec<i32>>()
 }
 
 pub fn part_one(input: &str) -> Option<u32> {
     let answer = input
         .lines()
         .map(|line| parse_report(line))
-        .filter(|report| is_report_safe(report))
+        .filter(|report| is_report_safe(report.iter()))
         .count();
     Some(answer as u32)
 }
 
-fn report_can_be_safe<'a, I>(report: &I) -> bool
-where
-    I: Iterator<Item = i32> + Clone + 'a,
-{
-    if is_report_safe(report) {
+fn report_can_be_safe(report: &Vec<i32>) -> bool {
+    if is_report_safe(report.iter()) {
         return true;
     }
 
-    report
-        .clone()
-        .enumerate()
-        .map(|(i, _)| {
+    (0..report.len()).any(|i| {
+        is_report_safe(
             report
-                .clone()
+                .iter()
                 .enumerate()
-                .filter_map(move |(j, val)| (i != j).then(|| val))
-                .into_iter()
-        })
-        .any(|part| is_report_safe(&part))
+                .filter_map(|(j, val)| (i != j).then(|| val)),
+        )
+    })
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
