@@ -2,9 +2,12 @@
 
 advent_of_code::solution!(2);
 
-fn is_report_safe(report: &Vec<i32>) -> bool {
+fn is_report_safe<'a, I>(report: &'a I) -> bool
+where
+    I: Iterator<Item = i32> + 'a + Clone,
+{
     let result = report
-        .into_iter()
+        .clone()
         .map_windows(|[a, b]| *b - *a)
         .map_windows(|[a, b]| {
             (1..=3_i32).contains(&a.abs())
@@ -15,11 +18,8 @@ fn is_report_safe(report: &Vec<i32>) -> bool {
     result
 }
 
-fn parse_report(report: &str) -> Vec<i32> {
-    report
-        .split_whitespace()
-        .map(|s| s.parse::<i32>().unwrap())
-        .collect::<Vec<i32>>()
+fn parse_report<'a>(report: &'a str) -> impl Iterator<Item = i32> + Clone + 'a {
+    report.split_whitespace().map(|s| s.parse::<i32>().unwrap())
 }
 
 pub fn part_one(input: &str) -> Option<u32> {
@@ -31,23 +31,28 @@ pub fn part_one(input: &str) -> Option<u32> {
     Some(answer as u32)
 }
 
-fn report_can_be_safe(report: &Vec<i32>) -> bool {
+fn report_can_be_safe<'a, I>(report: &I) -> bool
+where
+    I: Iterator<Item = i32> + Clone + 'a,
+{
     if is_report_safe(report) {
         return true;
     }
 
-    (0..report.len())
-        .map(|i| {
+    report
+        .clone()
+        .enumerate()
+        .map(|(i, _)| {
             report
-                .iter()
+                .clone()
                 .enumerate()
-                .filter_map(|(j, val)| {
+                .filter_map(move |(j, val)| {
                     if i != j {
-                        return Some(*val);
+                        return Some(val);
                     }
                     None
                 })
-                .collect::<Vec<i32>>()
+                .into_iter()
         })
         .any(|part| is_report_safe(&part))
 }
