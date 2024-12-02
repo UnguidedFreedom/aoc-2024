@@ -6,16 +6,14 @@ fn is_report_safe<'a, I>(report: &'a I) -> bool
 where
     I: Iterator<Item = i32> + 'a + Clone,
 {
-    let result = report
+    report
         .clone()
-        .map_windows(|[a, b]| *b - *a)
-        .map_windows(|[a, b]| {
+        .map_windows(|&[a, b, c]| (c - b, b - a))
+        .all(|(a, b)| {
             (1..=3_i32).contains(&a.abs())
                 && (1..=3_i32).contains(&b.abs())
                 && a.signum() == b.signum()
         })
-        .all(|x| x);
-    result
 }
 
 fn parse_report<'a>(report: &'a str) -> impl Iterator<Item = i32> + Clone + 'a {
@@ -46,12 +44,7 @@ where
             report
                 .clone()
                 .enumerate()
-                .filter_map(move |(j, val)| {
-                    if i != j {
-                        return Some(val);
-                    }
-                    None
-                })
+                .filter_map(move |(j, val)| (i != j).then(|| val))
                 .into_iter()
         })
         .any(|part| is_report_safe(&part))
