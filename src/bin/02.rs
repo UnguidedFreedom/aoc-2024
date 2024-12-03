@@ -37,7 +37,7 @@ where
 
     let report = &report.clone().collect::<Vec<i32>>();
 
-    report.iter().enumerate().any(|(i, _)| {
+    (0..report.len()).any(|i| {
         is_report_safe(
             &report
                 .iter()
