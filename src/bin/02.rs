@@ -14,14 +14,14 @@ where
             .all(|x| x)
 }
 
-fn parse_report<'a>(report: &'a str) -> impl Iterator<Item = i32> + Clone + 'a {
+fn parse_report(report: &str) -> impl Iterator<Item = i32> + Clone + '_ {
     report.split_whitespace().map(|s| s.parse::<i32>().unwrap())
 }
 
 pub fn part_one(input: &str) -> Option<u32> {
     let answer = input
         .lines()
-        .map(|line| parse_report(line))
+        .map(parse_report)
         .filter(|report| is_report_safe(report))
         .count();
     Some(answer as u32)
@@ -42,7 +42,7 @@ where
             &report
                 .iter()
                 .enumerate()
-                .filter_map(|(j, &val)| (i != j).then(|| val)),
+                .filter_map(|(j, &val)| (i != j).then_some(val)),
         )
     })
 }
@@ -50,7 +50,7 @@ where
 pub fn part_two(input: &str) -> Option<u32> {
     let answer = input
         .lines()
-        .map(|line| parse_report(line))
+        .map(parse_report)
         .filter(|report| report_can_be_safe(report))
         .count();
     Some(answer as u32)
