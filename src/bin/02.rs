@@ -14,7 +14,7 @@ where
             .all(|x| x)
 }
 
-fn parse_report<'a>(report: &'a str) -> impl Iterator<Item = i32> + Clone + 'a {
+fn parse_report(report: &str) -> impl Iterator<Item = i32> + Clone + '_ {
     report.split_whitespace().map(|s| s.parse::<i32>().unwrap())
 }
 

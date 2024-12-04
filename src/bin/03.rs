@@ -27,10 +27,10 @@ pub fn part_two(input: &str) -> Option<u32> {
     let result = re
         .captures_iter(input)
         .fold((0, true), |state, caps| {
-            if let Some(_) = caps.name("do") {
+            if caps.name("do").is_some() {
                 return (state.0, true);
             }
-            if let Some(_) = caps.name("dont") {
+            if caps.name("dont").is_some() {
                 return (state.0, false);
             }
 
