@@ -21,7 +21,7 @@ pub fn part_one(input: &str) -> Option<u32> {
                 .map(|s| s.parse::<u32>().unwrap())
                 .collect_tuple()
                 .unwrap();
-            deps.entry(a).or_insert(HashSet::new()).insert(b);
+            deps.entry(a).or_default().insert(b);
             continue;
         }
 
@@ -67,7 +67,7 @@ pub fn part_two(input: &str) -> Option<u32> {
                 .map(|s| s.parse::<u32>().unwrap())
                 .collect_tuple()
                 .unwrap();
-            deps.entry(b).or_insert(HashSet::new()).insert(a);
+            deps.entry(b).or_default().insert(a);
             continue;
         }
 
@@ -97,15 +97,12 @@ pub fn part_two(input: &str) -> Option<u32> {
                 valid = false;
             }
 
-            if prereq.len() == 0 {
+            if prereq.is_empty() {
                 contenders.push(val);
             }
 
             for &pre in prereq.iter() {
-                update_deps_rev
-                    .entry(pre)
-                    .or_insert(HashSet::new())
-                    .insert(val);
+                update_deps_rev.entry(pre).or_default().insert(val);
             }
 
             update_deps.insert(val, prereq);
@@ -118,8 +115,7 @@ pub fn part_two(input: &str) -> Option<u32> {
         let mut i = 0;
         let target = values.len() / 2;
 
-        while contenders.len() > 0 {
-            let val = contenders.pop().unwrap();
+        while let Some(val) = contenders.pop() {
             if i == target {
                 response += val;
                 break;
