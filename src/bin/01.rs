@@ -1,27 +1,24 @@
+use itertools::Itertools;
 use std::collections::HashMap;
+use std::iter::zip;
 
 advent_of_code::solution!(1);
 
-#[macro_use]
-extern crate text_io;
-
 pub fn part_one(input: &str) -> Option<u32> {
-    let mut first: Vec<u32> = Vec::new();
-    let mut second: Vec<u32> = Vec::new();
-    for line in input.lines() {
-        let (a, b): (u32, u32);
-        scan!(line.bytes() => "{} {}", a, b);
-        first.push(a);
-        second.push(b);
-    }
+    let (mut first, mut second): (Vec<u32>, Vec<u32>) = input
+        .lines()
+        .map(|line| {
+            line.split_whitespace()
+                .map(|s| s.parse::<u32>().unwrap())
+                .collect_tuple()
+                .unwrap()
+        })
+        .unzip();
+
     first.sort();
     second.sort();
 
-    let result = first
-        .iter()
-        .zip(second.iter())
-        .map(|(&a, &b)| a.abs_diff(b))
-        .sum();
+    let result = zip(first, second).map(|(a, b)| a.abs_diff(b)).sum();
 
     Some(result)
 }
@@ -30,15 +27,18 @@ pub fn part_two(input: &str) -> Option<u32> {
     let mut left: HashMap<u32, u32> = HashMap::new();
     let mut right: HashMap<u32, u32> = HashMap::new();
     for line in input.lines() {
-        let (a, b): (u32, u32);
-        scan!(line.bytes() => "{} {}", a, b);
+        let (a, b) = line
+            .split_whitespace()
+            .map(|s| s.parse::<u32>().unwrap())
+            .collect_tuple()
+            .unwrap();
         *left.entry(a).or_insert(0) += 1;
         *right.entry(b).or_insert(0) += 1;
     }
 
     let result = left
         .iter()
-        .filter_map(|(val, count)| Some(val * count * right.get(val)?))
+        .filter_map(|(val, count)| Some(right.get(val)? * val * count))
         .sum();
 
     Some(result)
