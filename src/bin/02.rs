@@ -1,4 +1,6 @@
 #![feature(iter_map_windows)]
+use itertools::FoldWhile::{Continue, Done};
+use itertools::Itertools;
 
 advent_of_code::solution!(2);
 
@@ -6,12 +8,19 @@ fn is_report_safe<I>(report: I) -> bool
 where
     I: Iterator<Item = i32> + Clone,
 {
-    let diffs = report.map_windows(|&[a, b]| b - a);
-
-    diffs.clone().all(|x| (1..=3).contains(&x.abs()))
-        && diffs
-            .map_windows(|[a, b]| a.signum() == b.signum())
-            .all(|x| x)
+    !report
+        .map_windows(|&[a, b]| b - a)
+        .fold_while(None, |state, x| {
+            if !(1..=3).contains(&x.abs()) {
+                return Done(state);
+            }
+            match state {
+                Some(signum) if signum == x.signum() => Continue(state),
+                Some(_) => Done(state),
+                None => Continue(Some(x.signum())),
+            }
+        })
+        .is_done()
 }
 
 fn parse_report(report: &str) -> impl Iterator<Item = i32> + Clone + '_ {
