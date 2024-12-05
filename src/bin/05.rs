@@ -115,11 +115,16 @@ pub fn part_two(input: &str) -> Option<u32> {
             continue;
         }
 
-        let mut ordered: Vec<u32> = Vec::new();
+        let mut i = 0;
+        let target = values.len() / 2;
 
         while contenders.len() > 0 {
             let val = contenders.pop().unwrap();
-            ordered.push(val);
+            if i == target {
+                response += val;
+                break;
+            }
+            i += 1;
 
             if let Some(unblocks) = update_deps_rev.get(&val) {
                 for &unblock in unblocks.iter() {
@@ -131,8 +136,6 @@ pub fn part_two(input: &str) -> Option<u32> {
                 }
             }
         }
-
-        response += ordered[ordered.len() / 2];
     }
 
     Some(response)
