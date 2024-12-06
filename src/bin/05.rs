@@ -1,76 +1,64 @@
-use std::collections::{HashMap, HashSet};
-
 use itertools::Itertools;
+use std::collections::{HashMap, HashSet};
 
 advent_of_code::solution!(5);
 
 pub fn part_one(input: &str) -> Option<u32> {
-    let mut deps = HashMap::<u32, HashSet<u32>>::new();
-    let mut in_first = true;
+    let mut lines_iter = input.lines();
 
-    let mut response: u32 = 0;
-    for line in input.lines() {
-        if line.is_empty() {
-            in_first = false;
-            continue;
-        }
-
-        if in_first {
-            let (a, b): (u32, u32) = line
-                .split('|')
+    let deps = lines_iter
+        .by_ref()
+        .take_while(|s| !s.is_empty())
+        .map(|l| {
+            l.split('|')
                 .map(|s| s.parse::<u32>().unwrap())
                 .collect_tuple()
-                .unwrap();
-            deps.entry(a).or_default().insert(b);
-            continue;
-        }
+                .unwrap()
+        })
+        .into_grouping_map()
+        .collect::<HashSet<_>>();
 
-        let values = line
-            .split(',')
-            .map(|s| s.parse::<u32>().unwrap())
-            .collect::<Vec<u32>>();
+    let response: u32 = lines_iter
+        .filter_map(|line| {
+            let mut vals = line.split(',').map(|s| s.parse::<u32>().unwrap());
 
-        let mut visited = HashSet::<u32>::new();
-        let mut valid = true;
-        for &val in values.iter() {
-            visited.insert(val);
-            if let Some(required) = deps.get(&val) {
-                if !required.is_disjoint(&visited) {
-                    valid = false;
-                    break;
+            let mut visited = HashSet::<u32>::new();
+
+            for val in vals.clone() {
+                if let Some(required) = deps.get(&val) {
+                    if !required.is_disjoint(&visited) {
+                        return None;
+                    }
                 }
+                visited.insert(val);
             }
-        }
 
-        if valid {
-            response += values[values.len() / 2];
-        }
-    }
+            vals.nth(visited.len() / 2)
+        })
+        .sum();
 
     Some(response)
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
-    let mut deps = HashMap::<u32, HashSet<u32>>::new();
-    let mut in_first = true;
-
     let mut response: u32 = 0;
-    for line in input.lines() {
-        if line.is_empty() {
-            in_first = false;
-            continue;
-        }
 
-        if in_first {
-            let (a, b): (u32, u32) = line
-                .split('|')
+    let mut lines_iter = input.lines();
+
+    let deps = lines_iter
+        .by_ref()
+        .take_while(|s| !s.is_empty())
+        .map(|l| {
+            l.split('|')
                 .map(|s| s.parse::<u32>().unwrap())
+                .rev()
                 .collect_tuple()
-                .unwrap();
-            deps.entry(b).or_default().insert(a);
-            continue;
-        }
+                .unwrap()
+        })
+        .into_grouping_map()
+        .collect::<HashSet<_>>();
 
+    for line in lines_iter {
         let values = line
             .split(',')
             .map(|s| s.parse::<u32>().unwrap())
