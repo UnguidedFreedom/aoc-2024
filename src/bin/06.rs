@@ -1,4 +1,5 @@
 use itertools::Itertools;
+use rayon::prelude::*;
 use std::collections::HashMap;
 
 advent_of_code::solution!(6);
@@ -113,8 +114,10 @@ pub fn part_two(input: &str) -> Option<u32> {
     }
 
     let result = (0..height)
+        .into_par_iter()
         .map(|i_obs| {
             (0..width)
+                .into_par_iter()
                 .filter(|&j_obs| {
                     if grid[i_obs][j_obs] != 0 {
                         return false;
@@ -123,16 +126,14 @@ pub fn part_two(input: &str) -> Option<u32> {
                     let mut visited: HashMap<(isize, isize), u8> = HashMap::new();
                     *visited.entry((si, sj)).or_default() = 1;
 
-                    (i, j) = (si, sj);
-
                     let mut dirs_enum = DIRS
                         .iter()
                         .enumerate()
                         .map(|(dir, &pos)| ((1 << dir) as u8, pos))
                         .cycle();
 
-                    let mut dir: u8;
-                    (dir, (di, dj)) = dirs_enum.next().unwrap();
+                    let (mut i, mut j) = (si, sj);
+                    let (mut dir, (mut di, mut dj)) = dirs_enum.next().unwrap();
 
                     loop {
                         let (i2, j2) = (i + di, j + dj);
