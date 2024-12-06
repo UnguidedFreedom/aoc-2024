@@ -21,17 +21,14 @@ pub fn part_one(input: &str) -> Option<u32> {
     let mut result: u32 = 0;
 
     let (mut i, mut j): (isize, isize) = (0, 0);
-    for (starti, row) in grid.iter_mut().enumerate() {
-        for (startj, char) in row.iter_mut().enumerate() {
+    'outer: for (starti, row) in grid.iter().enumerate() {
+        for (startj, char) in row.iter().enumerate() {
             if *char == b'^' {
                 (i, j) = (starti as isize, startj as isize);
-                *char = b'X';
+                // *char = b'X';
                 result += 1;
-                break;
+                break 'outer;
             }
-        }
-        if result > 0 {
-            break;
         }
     }
 
@@ -43,17 +40,18 @@ pub fn part_one(input: &str) -> Option<u32> {
         if !(irange.contains(&i2) && jrange.contains(&j2)) {
             return Some(result);
         }
-        match grid[i2 as usize][j2 as usize] {
+        let (i2u, j2u) = (i2 as usize, j2 as usize);
+        match grid[i2u][j2u] {
             b'#' => {
                 (di, dj) = *dirs.next().unwrap();
             }
-            b'X' => {
+            b'.' => {
                 (i, j) = (i2, j2);
+                grid[i2u][j2u] = b'X';
+                result += 1;
             }
             _ => {
                 (i, j) = (i2, j2);
-                grid[i as usize][j as usize] = b'X';
-                result += 1;
             }
         }
     }
@@ -77,15 +75,12 @@ pub fn part_two(input: &str) -> Option<u32> {
     let jrange = 0..width as isize;
 
     let (mut si, mut sj): (isize, isize) = (-1, -1);
-    for (starti, row) in grid.iter_mut().enumerate() {
+    'outer: for (starti, row) in grid.iter().enumerate() {
         for (startj, &char) in row.iter().enumerate() {
             if char == b'^' {
                 (si, sj) = (starti as isize, startj as isize);
-                break;
+                break 'outer;
             }
-        }
-        if si >= 0 {
-            break;
         }
     }
 
@@ -99,13 +94,14 @@ pub fn part_two(input: &str) -> Option<u32> {
         if !(irange.contains(&i2) && jrange.contains(&j2)) {
             break;
         }
-        match grid[i2 as usize][j2 as usize] {
+        let (i2u, j2u) = (i2 as usize, j2 as usize);
+        match grid[i2u][j2u] {
             b'#' => {
                 (di, dj) = *dirs.next().unwrap();
             }
             u8::MAX => {
                 (i, j) = (i2, j2);
-                grid[i as usize][j as usize] = 0;
+                grid[i2u][j2u] = 0;
             }
             _ => {
                 (i, j) = (i2, j2);
@@ -113,49 +109,47 @@ pub fn part_two(input: &str) -> Option<u32> {
         }
     }
 
-    let result = (0..height)
-        .into_par_iter()
-        .map(|i_obs| {
-            (0..width)
-                .into_par_iter()
-                .filter(|&j_obs| {
-                    if grid[i_obs][j_obs] != 0 {
-                        return false;
-                    }
-
-                    let mut visited: HashMap<(isize, isize), u8> = HashMap::new();
-                    *visited.entry((si, sj)).or_default() = 1;
-
-                    let mut dirs_enum = DIRS
-                        .iter()
-                        .enumerate()
-                        .map(|(dir, &pos)| ((1 << dir) as u8, pos))
-                        .cycle();
-
-                    let (mut i, mut j) = (si, sj);
-                    let (mut dir, (mut di, mut dj)) = dirs_enum.next().unwrap();
-
-                    loop {
-                        let (i2, j2) = (i + di, j + dj);
-                        if !(irange.contains(&i2) && jrange.contains(&j2)) {
-                            return false;
-                        }
-                        let (i3, j3) = (i2 as usize, j2 as usize);
-                        if (i3, j3) == (i_obs, j_obs) || grid[i3][j3] == b'#' {
-                            (dir, (di, dj)) = dirs_enum.next().unwrap();
-                            continue;
-                        }
-                        let entry = visited.entry((i2, j2)).or_default();
-                        if *entry & dir != 0 {
-                            return true;
-                        }
-                        *entry |= dir;
-                        (i, j) = (i2, j2);
-                    }
-                })
-                .count() as u32
+    let result = grid
+        .par_iter()
+        .enumerate()
+        .flat_map(|(i, row)| {
+            row.par_iter()
+                .enumerate()
+                .filter_map(move |(j, &char)| (char == 0).then_some((i, j)))
         })
-        .sum::<u32>();
+        .filter(|&(i_obs, j_obs)| {
+            let mut visited: HashMap<(isize, isize), u8> = HashMap::new();
+
+            let mut dirs_enum = DIRS
+                .iter()
+                .enumerate()
+                .map(|(dir, &pos)| ((1 << dir) as u8, pos))
+                .cycle();
+
+            let (mut i, mut j) = (si, sj);
+            let (mut dir, (mut di, mut dj)) = dirs_enum.next().unwrap();
+
+            loop {
+                let (i2, j2) = (i + di, j + dj);
+                if !(irange.contains(&i2) && jrange.contains(&j2)) {
+                    return false;
+                }
+                let (i2u, j2u) = (i2 as usize, j2 as usize);
+                if grid[i2u][j2u] == b'#' || (i2u, j2u) == (i_obs, j_obs) {
+                    let entry = visited.entry((i, j)).or_default();
+                    if *entry & dir != 0 {
+                        return true;
+                    }
+                    *entry |= dir;
+
+                    (dir, (di, dj)) = dirs_enum.next().unwrap();
+
+                    continue;
+                }
+                (i, j) = (i2, j2);
+            }
+        })
+        .count() as u32;
 
     Some(result)
 }
