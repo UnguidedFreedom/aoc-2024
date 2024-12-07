@@ -10,7 +10,7 @@ where
         None => target == first,
         Some(val) if val > target => false,
         Some(val) => {
-            (target % val == 0 && doable_one(target / val, first, iter.clone()))
+            (val != 0 && target % val == 0 && doable_one(target / val, first, iter.clone()))
                 || doable_one(target - val, first, iter)
         }
     }
@@ -42,7 +42,7 @@ where
         None => target == first,
         Some((_, val)) if val > target => false,
         Some((div, val)) => {
-            (target % val == 0 && doable_two(target / val, first, iter.clone()))
+            (val != 0 && target % val == 0 && doable_two(target / val, first, iter.clone()))
                 || (target % div == val && doable_two(target / div, first, iter.clone()))
                 || doable_two(target - val, first, iter)
         }
