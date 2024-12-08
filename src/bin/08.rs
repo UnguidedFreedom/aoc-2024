@@ -5,7 +5,13 @@ use itertools::Itertools;
 advent_of_code::solution!(8);
 
 pub fn part_one(input: &str) -> Option<u32> {
-    let antennas = input
+    let height = input.lines().count();
+    let width = input.lines().next().unwrap().len();
+
+    let irange = 0..height as isize;
+    let jrange = 0..width as isize;
+
+    let result = input
         .lines()
         .enumerate()
         .flat_map(|(i, line)| {
@@ -16,31 +22,18 @@ pub fn part_one(input: &str) -> Option<u32> {
                     (char != b'.').then_some((char, (i as isize, j as isize)))
                 })
         })
-        .into_group_map();
+        .into_group_map()
+        .iter()
+        .flat_map(|(_, ants)| {
+            ants.iter()
+                .tuple_combinations::<(&(isize, isize), &(isize, isize))>()
+        })
+        .flat_map(|(&(ia, ja), &(ib, jb))| [(2 * ia - ib, 2 * ja - jb), (2 * ib - ia, 2 * jb - ja)])
+        .filter(|(i, j)| irange.contains(i) && jrange.contains(j))
+        .unique()
+        .count() as u32;
 
-    let height = input.lines().count();
-    let width = input.lines().next().unwrap().len();
-
-    let irange = 0..height as isize;
-    let jrange = 0..width as isize;
-
-    let mut antinodes: HashSet<(isize, isize)> = HashSet::new();
-
-    for (_, ants) in antennas {
-        for coords in ants.iter().combinations(2) {
-            let (&&a, &&b) = coords.iter().collect_tuple().unwrap();
-            let before = (2 * a.0 - b.0, 2 * a.1 - b.1);
-            if irange.contains(&before.0) && jrange.contains(&before.1) {
-                antinodes.insert(before);
-            }
-            let after = (2 * b.0 - a.0, 2 * b.1 - a.1);
-            if irange.contains(&after.0) && jrange.contains(&after.1) {
-                antinodes.insert(after);
-            }
-        }
-    }
-
-    Some(antinodes.len() as u32)
+    Some(result)
 }
 
 fn gcd(a: isize, b: isize) -> isize {
