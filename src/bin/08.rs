@@ -28,7 +28,12 @@ pub fn part_one(input: &str) -> Option<u32> {
             ants.iter()
                 .tuple_combinations::<(&(isize, isize), &(isize, isize))>()
         })
-        .flat_map(|(&(ia, ja), &(ib, jb))| [(2 * ia - ib, 2 * ja - jb), (2 * ib - ia, 2 * jb - ja)])
+        .flat_map(|(&(i_a, j_a), &(i_b, j_b))| {
+            [
+                (2 * i_a - i_b, 2 * j_a - j_b),
+                (2 * i_b - i_a, 2 * j_b - j_a),
+            ]
+        })
         .filter(|(i, j)| irange.contains(i) && jrange.contains(j))
         .unique()
         .count() as u32;
@@ -48,7 +53,15 @@ fn gcd(a: isize, b: isize) -> isize {
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
-    let antennas = input
+    let height = input.lines().count();
+    let width = input.lines().next().unwrap().len();
+
+    let irange = 0..height as isize;
+    let jrange = 0..width as isize;
+
+    let mut antinodes: HashSet<(isize, isize)> = HashSet::new();
+
+    input
         .lines()
         .enumerate()
         .flat_map(|(i, line)| {
@@ -59,36 +72,29 @@ pub fn part_two(input: &str) -> Option<u32> {
                     (char != b'.').then_some((char, (i as isize, j as isize)))
                 })
         })
-        .into_group_map();
+        .into_group_map()
+        .iter()
+        .flat_map(|(_, ants)| {
+            ants.iter()
+                .tuple_combinations::<(&(isize, isize), &(isize, isize))>()
+        })
+        .for_each(|(&(i_a, j_a), &(i_b, j_b))| {
+            let (di, dj) = (i_a - i_b, j_a - j_b);
+            let gcd_diffs = gcd(di, dj);
+            let (di, dj) = (di / gcd_diffs, dj / gcd_diffs);
 
-    let height = input.lines().count();
-    let width = input.lines().next().unwrap().len();
-
-    let irange = 0..height as isize;
-    let jrange = 0..width as isize;
-
-    let mut antinodes: HashSet<(isize, isize)> = HashSet::new();
-
-    for (_, ants) in antennas {
-        for coords in ants.iter().combinations(2) {
-            let (&&a, &&b) = coords.iter().collect_tuple().unwrap();
-            let diffs = (a.0 - b.0, a.1 - b.1);
-            let gcd_diffs = gcd(diffs.0, diffs.1);
-            let diffs = (diffs.0 / gcd_diffs, diffs.1 / gcd_diffs);
-
-            let (mut i, mut j) = a;
+            let (mut i, mut j) = (i_a, i_b);
             while irange.contains(&i) && jrange.contains(&j) {
                 antinodes.insert((i, j));
-                (i, j) = (i - diffs.0, j - diffs.1);
+                (i, j) = (i - di, j - dj);
             }
 
-            (i, j) = (a.0 + diffs.0, a.1 + diffs.1);
+            (i, j) = (i_a + di, j_a + dj);
             while irange.contains(&i) && jrange.contains(&j) {
                 antinodes.insert((i, j));
-                (i, j) = (i + diffs.0, j + diffs.1);
+                (i, j) = (i + di, j + dj);
             }
-        }
-    }
+        });
 
     Some(antinodes.len() as u32)
 }
