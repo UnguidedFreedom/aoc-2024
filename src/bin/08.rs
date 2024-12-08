@@ -11,7 +11,9 @@ pub fn part_one(input: &str) -> Option<u32> {
     let irange = 0..height as isize;
     let jrange = 0..width as isize;
 
-    let result = input
+    let mut antinodes: HashSet<(isize, isize)> = HashSet::new();
+
+    input
         .lines()
         .enumerate()
         .flat_map(|(i, line)| {
@@ -28,17 +30,19 @@ pub fn part_one(input: &str) -> Option<u32> {
             ants.iter()
                 .tuple_combinations::<(&(isize, isize), &(isize, isize))>()
         })
-        .flat_map(|(&(i_a, j_a), &(i_b, j_b))| {
-            [
-                (2 * i_a - i_b, 2 * j_a - j_b),
-                (2 * i_b - i_a, 2 * j_b - j_a),
-            ]
-        })
-        .filter(|(i, j)| irange.contains(i) && jrange.contains(j))
-        .unique()
-        .count() as u32;
+        .for_each(|(&(i_a, j_a), &(i_b, j_b))| {
+            let (i, j) = (2 * i_a - i_b, 2 * j_a - j_b);
+            if irange.contains(&i) && jrange.contains(&j) {
+                antinodes.insert((i, j));
+            }
 
-    Some(result)
+            let (i, j) = (2 * i_b - i_a, 2 * j_b - j_a);
+            if irange.contains(&i) && jrange.contains(&j) {
+                antinodes.insert((i, j));
+            }
+        });
+
+    Some(antinodes.len() as u32)
 }
 
 fn gcd(a: isize, b: isize) -> isize {
