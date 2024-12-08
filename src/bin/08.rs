@@ -87,7 +87,7 @@ pub fn part_two(input: &str) -> Option<u32> {
             let gcd_diffs = gcd(di, dj);
             let (di, dj) = (di / gcd_diffs, dj / gcd_diffs);
 
-            let (mut i, mut j) = (i_a, i_b);
+            let (mut i, mut j) = (i_a, j_a);
             while irange.contains(&i) && jrange.contains(&j) {
                 antinodes.insert((i, j));
                 (i, j) = (i - di, j - dj);
