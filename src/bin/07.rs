@@ -1,4 +1,5 @@
 use itertools::Itertools;
+use rayon::prelude::*;
 
 advent_of_code::solution!(7);
 
@@ -19,6 +20,8 @@ where
 pub fn part_one(input: &str) -> Option<u64> {
     let result = input
         .lines()
+        .collect_vec()
+        .par_iter()
         .filter_map(|line| {
             let (target, data) = line.split(": ").collect_tuple().unwrap();
 
@@ -52,6 +55,8 @@ where
 pub fn part_two(input: &str) -> Option<u64> {
     let result = input
         .lines()
+        .collect_vec()
+        .par_iter()
         .filter_map(|line| {
             let (target, data) = line.split(": ").collect_tuple().unwrap();
 

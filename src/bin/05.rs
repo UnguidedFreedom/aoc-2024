@@ -20,7 +20,8 @@ pub fn part_one(input: &str) -> Option<u32> {
         .collect::<HashSet<_>>();
 
     let response: u32 = lines_iter
-        .par_bridge()
+        .collect_vec()
+        .par_iter()
         .filter_map(|line| {
             let mut vals = line.split(',').map(|s| s.parse::<u32>().unwrap());
 
@@ -59,7 +60,8 @@ pub fn part_two(input: &str) -> Option<u32> {
         .collect::<HashSet<_>>();
 
     let response: u32 = lines_iter
-        .par_bridge()
+        .collect_vec()
+        .par_iter()
         .filter_map(|line| {
             let values = line
                 .split(',')
