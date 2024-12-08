@@ -1,4 +1,5 @@
 use itertools::Itertools;
+use rayon::prelude::*;
 use std::collections::{HashMap, HashSet};
 
 advent_of_code::solution!(5);
@@ -19,6 +20,7 @@ pub fn part_one(input: &str) -> Option<u32> {
         .collect::<HashSet<_>>();
 
     let response: u32 = lines_iter
+        .par_bridge()
         .filter_map(|line| {
             let mut vals = line.split(',').map(|s| s.parse::<u32>().unwrap());
 
@@ -41,8 +43,6 @@ pub fn part_one(input: &str) -> Option<u32> {
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
-    let mut response: u32 = 0;
-
     let mut lines_iter = input.lines();
 
     let deps = lines_iter
@@ -58,69 +58,74 @@ pub fn part_two(input: &str) -> Option<u32> {
         .into_grouping_map()
         .collect::<HashSet<_>>();
 
-    for line in lines_iter {
-        let values = line
-            .split(',')
-            .map(|s| s.parse::<u32>().unwrap())
-            .collect::<Vec<u32>>();
+    let response: u32 = lines_iter
+        .par_bridge()
+        .filter_map(|line| {
+            let values = line
+                .split(',')
+                .map(|s| s.parse::<u32>().unwrap())
+                .collect::<Vec<u32>>();
 
-        let values_set: HashSet<u32> = HashSet::from_iter(values.iter().copied());
-        let mut visited = HashSet::<u32>::new();
-        let mut update_deps: HashMap<u32, HashSet<u32>> = HashMap::new();
-        let mut update_deps_rev: HashMap<u32, HashSet<u32>> = HashMap::new();
-        let mut valid = true;
-        let mut contenders: Vec<u32> = Vec::new();
+            let n = values.len();
 
-        for &val in values.iter() {
-            visited.insert(val);
+            let values_set: HashSet<u32> = HashSet::from_iter(values.iter().copied());
+            let mut visited = HashSet::<u32>::with_capacity(n);
+            let mut update_deps: HashMap<u32, HashSet<u32>> = HashMap::with_capacity(n);
+            let mut update_deps_rev: HashMap<u32, HashSet<u32>> = HashMap::with_capacity(n);
+            let mut valid = true;
+            let mut contenders: Vec<u32> = Vec::new();
 
-            let prereq: HashSet<_> = deps
-                .get(&val)
-                .unwrap_or(&HashSet::<u32>::new())
-                .intersection(&values_set)
-                .copied()
-                .collect();
+            for &val in values.iter() {
+                visited.insert(val);
 
-            if !prereq.is_subset(&visited) {
-                valid = false;
+                let prereq: HashSet<_> = deps
+                    .get(&val)
+                    .unwrap_or(&HashSet::<u32>::new())
+                    .intersection(&values_set)
+                    .copied()
+                    .collect();
+
+                if !prereq.is_subset(&visited) {
+                    valid = false;
+                }
+
+                if prereq.is_empty() {
+                    contenders.push(val);
+                }
+
+                for &pre in prereq.iter() {
+                    update_deps_rev.entry(pre).or_default().insert(val);
+                }
+
+                update_deps.insert(val, prereq);
             }
 
-            if prereq.is_empty() {
-                contenders.push(val);
+            if valid {
+                return None;
             }
 
-            for &pre in prereq.iter() {
-                update_deps_rev.entry(pre).or_default().insert(val);
-            }
+            let mut i = 0;
+            let target = values.len() / 2;
 
-            update_deps.insert(val, prereq);
-        }
+            while let Some(val) = contenders.pop() {
+                if i == target {
+                    return Some(val);
+                }
+                i += 1;
 
-        if valid {
-            continue;
-        }
-
-        let mut i = 0;
-        let target = values.len() / 2;
-
-        while let Some(val) = contenders.pop() {
-            if i == target {
-                response += val;
-                break;
-            }
-            i += 1;
-
-            if let Some(unblocks) = update_deps_rev.get(&val) {
-                for &unblock in unblocks.iter() {
-                    let d = update_deps.get_mut(&unblock).unwrap();
-                    d.remove(&val);
-                    if d.is_empty() {
-                        contenders.push(unblock);
+                if let Some(unblocks) = update_deps_rev.get(&val) {
+                    for &unblock in unblocks.iter() {
+                        let d = update_deps.get_mut(&unblock).unwrap();
+                        d.remove(&val);
+                        if d.is_empty() {
+                            contenders.push(unblock);
+                        }
                     }
                 }
             }
-        }
-    }
+            None // normally unreachable
+        })
+        .sum::<u32>();
 
     Some(response)
 }
