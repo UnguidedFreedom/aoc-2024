@@ -62,13 +62,17 @@ pub fn part_two(input: &str) -> Option<u64> {
 
     for (val, block) in blocks.iter().enumerate().rev() {
         let mut pos = block.0;
-        for space in spaces.iter_mut() {
+        for (idx, space) in spaces.iter().enumerate() {
             if space.0 > pos {
                 break;
             }
             if space.1 >= block.1 {
                 pos = space.0;
-                *space = (space.0 + block.1, space.1 - block.1);
+                if space.1 == block.1 {
+                    spaces.remove(idx);
+                } else {
+                    spaces[idx] = (space.0 + block.1, space.1 - block.1);
+                }
                 break;
             }
         }
