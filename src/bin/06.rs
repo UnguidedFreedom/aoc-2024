@@ -1,16 +1,9 @@
-use std::collections::HashSet;
-
 use itertools::Itertools;
 use rayon::prelude::*;
 
 advent_of_code::solution!(6);
 
 const DIRS: &[(isize, isize); 4] = &[(-1, 0), (0, 1), (1, 0), (0, -1)];
-
-enum Spot {
-    Obstacle(usize),
-    Clear,
-}
 
 pub fn part_one(input: &str) -> Option<u32> {
     let mut grid = input.lines().map(|s| s.as_bytes().to_vec()).collect_vec();
@@ -62,23 +55,23 @@ pub fn part_two(input: &str) -> Option<u32> {
     let mut n: usize = 0;
     let (mut si, mut sj): (isize, isize) = (-1, -1);
 
-    let grid = input
+    let mut grid = input
         .lines()
         .enumerate()
         .map(|(i, s)| {
             s.as_bytes()
                 .iter()
                 .enumerate()
-                .map(|(j, &c)| {
-                    if c == b'#' {
+                .map(|(j, &c)| match c {
+                    b'#' => {
                         n += 1;
-                        Spot::Obstacle(n - 1)
-                    } else {
-                        if c == b'^' {
-                            (si, sj) = (i as isize, j as isize);
-                        }
-                        Spot::Clear
+                        2 | (n - 1) << 2
                     }
+                    b'^' => {
+                        (si, sj) = (i as isize, j as isize);
+                        1
+                    }
+                    _ => 0,
                 })
                 .collect_vec()
         })
@@ -95,7 +88,7 @@ pub fn part_two(input: &str) -> Option<u32> {
 
     let (mut i, mut j) = (si, sj);
 
-    let mut path: HashSet<(isize, isize)> = HashSet::new();
+    let mut path: Vec<(isize, isize)> = Vec::new();
 
     loop {
         let (i2, j2) = (i + di, j + dj);
@@ -103,27 +96,33 @@ pub fn part_two(input: &str) -> Option<u32> {
             break;
         }
         match grid[i2 as usize][j2 as usize] {
-            Spot::Obstacle(_) => {
-                (di, dj) = *dirs.next().unwrap();
-            }
-            Spot::Clear => {
-                path.insert((i2, j2));
+            0 => {
+                grid[i2 as usize][j2 as usize] = 1;
+                path.push((i2, j2));
                 (i, j) = (i2, j2);
+            }
+            1 => {
+                (i, j) = (i2, j2);
+            }
+            _ => {
+                (di, dj) = *dirs.next().unwrap();
             }
         }
     }
 
+    let dirs_enum = DIRS
+        .iter()
+        .enumerate()
+        .map(|(dir, &pos)| ((1 << dir) as u8, pos))
+        .cycle();
+
     let result = path
         .par_iter()
-        .filter(|&(i_obs, j_obs)| {
-            let mut dirs_enum = DIRS
-                .iter()
-                .enumerate()
-                .map(|(dir, &pos)| ((1 << dir) as u8, pos))
-                .cycle();
+        .filter(|&&obstacle| {
+            let mut dirs_iter = dirs_enum.clone();
 
             let (mut i, mut j) = (si, sj);
-            let (mut dir, (mut di, mut dj)) = dirs_enum.next().unwrap();
+            let (mut dir, (mut di, mut dj)) = dirs_iter.next().unwrap();
 
             let mut visited = vec![0_u8; n + 1];
 
@@ -133,22 +132,21 @@ pub fn part_two(input: &str) -> Option<u32> {
                     return false;
                 }
 
-                let idx: usize;
-                if (i2, j2) == (*i_obs, *j_obs) {
-                    idx = n;
-                } else if let Spot::Obstacle(i) = grid[i2 as usize][j2 as usize] {
-                    idx = i;
+                let idx = if (i2, j2) == obstacle {
+                    n
+                } else if grid[i2 as usize][j2 as usize] & 2 != 0 {
+                    grid[i2 as usize][j2 as usize] >> 2
                 } else {
                     (i, j) = (i2, j2);
                     continue;
-                }
+                };
 
                 if visited[idx] & dir != 0 {
                     return true;
                 }
                 visited[idx] |= dir;
 
-                (dir, (di, dj)) = dirs_enum.next().unwrap();
+                (dir, (di, dj)) = dirs_iter.next().unwrap();
             }
         })
         .count() as u32;
