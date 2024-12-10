@@ -1,6 +1,5 @@
 use itertools::Itertools;
 use rayon::prelude::*;
-use std::collections::HashSet;
 use std::ops::Range;
 
 advent_of_code::solution!(10);
@@ -12,20 +11,18 @@ fn trailheads_score(
     (irange, jrange): (&Range<isize>, &Range<isize>),
     (i, j): (isize, isize),
     val: u8,
-) -> HashSet<(isize, isize)> {
+) -> Vec<(isize, isize)> {
     if !(irange.contains(&i) && jrange.contains(&j)) || grid[i as usize][j as usize] != val {
-        return HashSet::new();
+        return vec![];
     }
 
     if val == 9 {
-        return HashSet::from([(i, j)]);
+        return vec![(i, j)];
     }
 
-    DIRS.iter().fold(HashSet::new(), |mut res, &(di, dj)| {
-        let results = trailheads_score(grid, (irange, jrange), (i + di, j + dj), val + 1);
-        res.extend(results.iter());
-        res
-    })
+    DIRS.iter()
+        .flat_map(|(di, dj)| trailheads_score(grid, (irange, jrange), (i + di, j + dj), val + 1))
+        .collect::<Vec<(isize, isize)>>()
 }
 
 pub fn part_one(input: &str) -> Option<u32> {
@@ -54,7 +51,12 @@ pub fn part_one(input: &str) -> Option<u32> {
 
     let response: u32 = starts
         .par_iter()
-        .map(|&c| trailheads_score(&grid, (&irange, &jrange), c, 0).len() as u32)
+        .map(|&c| {
+            trailheads_score(&grid, (&irange, &jrange), c, 0)
+                .iter()
+                .unique()
+                .count() as u32
+        })
         .sum::<u32>();
 
     Some(response)
@@ -74,7 +76,7 @@ fn trailheads_rating(
         return 1;
     }
 
-    DIRS.par_iter()
+    DIRS.iter()
         .map(|&(di, dj)| trailheads_rating(grid, (irange, jrange), (i + di, j + dj), val + 1))
         .sum::<u32>()
 }
