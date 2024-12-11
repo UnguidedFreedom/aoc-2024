@@ -11,18 +11,20 @@ fn trailheads_score(
     (irange, jrange): (&Range<isize>, &Range<isize>),
     (i, j): (isize, isize),
     val: u8,
-) -> Vec<(isize, isize)> {
+    solutions: &mut Vec<(isize, isize)>,
+) {
     if !(irange.contains(&i) && jrange.contains(&j)) || grid[i as usize][j as usize] != val {
-        return vec![];
+        return;
     }
 
     if val == 9 {
-        return vec![(i, j)];
+        solutions.push((i, j));
+        return;
     }
 
-    DIRS.iter()
-        .flat_map(|(di, dj)| trailheads_score(grid, (irange, jrange), (i + di, j + dj), val + 1))
-        .collect::<Vec<(isize, isize)>>()
+    DIRS.iter().for_each(|(di, dj)| {
+        trailheads_score(grid, (irange, jrange), (i + di, j + dj), val + 1, solutions);
+    });
 }
 
 pub fn part_one(input: &str) -> Option<u32> {
@@ -52,10 +54,9 @@ pub fn part_one(input: &str) -> Option<u32> {
     let response: u32 = starts
         .par_iter()
         .map(|&c| {
-            trailheads_score(&grid, (&irange, &jrange), c, 0)
-                .iter()
-                .unique()
-                .count() as u32
+            let mut solutions: Vec<(isize, isize)> = Vec::new();
+            trailheads_score(&grid, (&irange, &jrange), c, 0, &mut solutions);
+            solutions.iter().unique().count() as u32
         })
         .sum::<u32>();
 
