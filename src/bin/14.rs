@@ -7,6 +7,7 @@ const P1_ITERS: i64 = 100;
 pub fn part_one(input: &str) -> Option<u64> {
     let mut quadrants = [0_u64; 4];
 
+    #[cfg(not(test))]
     let (dimx, dimy) = (101, 103);
     #[cfg(test)]
     let (dimx, dimy) = (11, 7);
