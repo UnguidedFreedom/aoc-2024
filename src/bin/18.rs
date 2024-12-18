@@ -86,8 +86,9 @@ pub fn part_two(input: &str) -> Option<String> {
 
     let lines = input.lines().collect_vec();
 
-    let mut a = to_take;
-    let mut b = lines.len();
+    let mut a = to_take - 1; // highest known safe
+    let mut b = lines.len() - 1; // lowest known unsafe
+
     let mut min_obstacles = vec![false; (dimension * dimension) as usize];
 
     for &line in lines.iter().take(to_take) {
@@ -97,7 +98,7 @@ pub fn part_two(input: &str) -> Option<String> {
     while a + 1 < b {
         let mid = (a + b) / 2;
         let mut obstacles = min_obstacles.clone();
-        for &line in lines.iter().take(mid).skip(a) {
+        for &line in lines.iter().take(mid + 1).skip(a) {
             set_obstacle(line, &mut obstacles, dimension);
         }
 
@@ -109,7 +110,7 @@ pub fn part_two(input: &str) -> Option<String> {
         }
     }
 
-    Some(lines[a].to_string())
+    Some(lines[b].to_string())
 }
 
 #[cfg(test)]
