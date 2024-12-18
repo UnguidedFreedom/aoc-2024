@@ -67,25 +67,21 @@ pub fn part_two(input: &str) -> Option<u64> {
     let mut possible_as = vec![0_u64];
     for &expected in program.iter().rev() {
         let mut new_possibles = Vec::new();
-        for &a in &possible_as {
-            let max_a = (a + 1) << 3;
-            for a_cand in 0..8 {
-                let mut new_a = a << 3 | a_cand;
-                let b = a_cand ^ 5;
-                while new_a < max_a {
-                    let out = b ^ 6 ^ ((new_a / (1 << b)) % 8);
+        for &old_a in &possible_as {
+            for a_candidate in 0..8 {
+                let a = old_a << 3 | a_candidate;
+                let b = a_candidate ^ 5;
+                let out = (b ^ 6 ^ (a / (1 << b))) % 8;
 
-                    if out == expected {
-                        new_possibles.push(new_a);
-                    }
-                    new_a += 8;
+                if out == expected {
+                    new_possibles.push(a);
                 }
             }
         }
         possible_as = new_possibles;
     }
 
-    Some(*possible_as.iter().min().unwrap())
+    possible_as.first().copied()
 }
 
 #[cfg(test)]
