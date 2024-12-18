@@ -42,6 +42,17 @@ fn shortest_path(obstacles: &[bool], dimension: i32) -> Option<u64> {
     None
 }
 
+fn set_obstacle(input: &str, obstacles: &mut [bool], dimension: i32) {
+    let (i, j) = input
+        .split(',')
+        .map(|s| s.parse::<i32>().unwrap())
+        .collect_tuple()
+        .unwrap();
+
+    let idx = (i * dimension + j) as usize;
+    obstacles[idx] = true;
+}
+
 pub fn part_one(input: &str) -> Option<u64> {
     #[cfg(not(test))]
     let dimension = 71;
@@ -56,14 +67,7 @@ pub fn part_one(input: &str) -> Option<u64> {
     let mut obstacles = vec![false; (dimension * dimension) as usize];
 
     for line in input.lines().take(to_take) {
-        let (i, j) = line
-            .split(',')
-            .map(|s| s.parse::<i32>().unwrap())
-            .collect_tuple()
-            .unwrap();
-
-        let idx = (i * dimension + j) as usize;
-        obstacles[idx] = true;
+        set_obstacle(line, &mut obstacles, dimension);
     }
 
     shortest_path(&obstacles, dimension)
@@ -80,24 +84,32 @@ pub fn part_two(input: &str) -> Option<String> {
     #[cfg(test)]
     let to_take = 12;
 
-    let mut obstacles = vec![false; (dimension * dimension) as usize];
+    let lines = input.lines().collect_vec();
 
-    for (k, line) in input.lines().enumerate() {
-        let (i, j) = line
-            .split(',')
-            .map(|s| s.parse::<i32>().unwrap())
-            .collect_tuple()
-            .unwrap();
+    let mut a = to_take;
+    let mut b = lines.len();
+    let mut min_obstacles = vec![false; (dimension * dimension) as usize];
 
-        let idx = (i * dimension + j) as usize;
-        obstacles[idx] = true;
+    for &line in lines.iter().take(to_take) {
+        set_obstacle(line, &mut min_obstacles, dimension);
+    }
 
-        if k > to_take && shortest_path(&obstacles, dimension).is_none() {
-            return Some(line.to_string());
+    while a + 1 < b {
+        let mid = (a + b) / 2;
+        let mut obstacles = min_obstacles.clone();
+        for &line in lines.iter().take(mid).skip(a) {
+            set_obstacle(line, &mut obstacles, dimension);
+        }
+
+        if shortest_path(&obstacles, dimension).is_some() {
+            a = mid;
+            min_obstacles = obstacles;
+        } else {
+            b = mid;
         }
     }
 
-    None
+    Some(lines[a].to_string())
 }
 
 #[cfg(test)]
