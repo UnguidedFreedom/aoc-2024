@@ -15,27 +15,20 @@ fn shortest_path(obstacles: &[bool], dimension: i32) -> Option<u64> {
 
     let mut visited = vec![false; (dimension * dimension) as usize];
 
-    while let Some((coords, Reverse(dist))) = candidates.pop() {
-        if coords == end {
+    while let Some(((i, j), Reverse(dist))) = candidates.pop() {
+        if (i, j) == end {
             return Some(dist);
         }
 
-        let (i, j) = coords;
-        let idx = (i * dimension + j) as usize;
-
-        if visited[idx] {
-            continue;
-        }
-        visited[idx] = true;
+        visited[(i * dimension + j) as usize] = true;
 
         for (di, dj) in DIRS {
-            let new_coords = (i + di, j + dj);
-            let (i2, j2) = new_coords;
+            let (i2, j2) = (i + di, j + dj);
             let idx2 = (i2 * dimension + j2) as usize;
             if !(range.contains(&i2) && range.contains(&j2)) || obstacles[idx2] || visited[idx2] {
                 continue;
             }
-            candidates.push_increase(new_coords, Reverse(dist + 1));
+            candidates.push_increase((i2, j2), Reverse(dist + 1));
         }
     }
 
