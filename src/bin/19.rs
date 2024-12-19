@@ -3,6 +3,36 @@ use std::collections::HashMap;
 
 advent_of_code::solution!(19);
 
+struct TrieNode {
+    children: HashMap<char, TrieNode>,
+    is_word: bool,
+}
+
+impl TrieNode {
+    fn new() -> Self {
+        Self {
+            children: HashMap::new(),
+            is_word: false,
+        }
+    }
+
+    fn insert(&mut self, word: &str) {
+        let mut node = self;
+        for c in word.chars() {
+            node = node.children.entry(c).or_insert_with(TrieNode::new);
+        }
+        node.is_word = true;
+    }
+
+    fn is_word(&self) -> bool {
+        self.is_word
+    }
+
+    fn get(&self, c: char) -> Option<&TrieNode> {
+        self.children.get(&c)
+    }
+}
+
 fn doable(line: &str, towels: &[&str]) -> bool {
     if line.is_empty() {
         return true;
@@ -30,7 +60,7 @@ pub fn part_one(input: &str) -> Option<u64> {
     Some(response)
 }
 
-fn doable_count(line: &str, towels: &[&str], memo: &mut HashMap<String, u64>) -> u64 {
+fn doable_count(line: &str, towels: &TrieNode, memo: &mut HashMap<String, u64>) -> u64 {
     if line.is_empty() {
         return 1;
     }
@@ -41,10 +71,15 @@ fn doable_count(line: &str, towels: &[&str], memo: &mut HashMap<String, u64>) ->
 
     let mut ways = 0;
 
-    for &towel in towels {
-        if let Some(stripped) = line.strip_prefix(towel) {
-            ways += doable_count(stripped, towels, memo);
-        } else if towel > line {
+    let mut trie = towels;
+
+    for (i, char) in line.chars().enumerate() {
+        if let Some(node) = trie.get(char) {
+            if node.is_word() {
+                ways += doable_count(&line[i + 1..], towels, memo);
+            }
+            trie = node;
+        } else {
             break;
         }
     }
@@ -56,17 +91,18 @@ fn doable_count(line: &str, towels: &[&str], memo: &mut HashMap<String, u64>) ->
 
 pub fn part_two(input: &str) -> Option<u64> {
     let mut lines = input.lines();
-    let mut towels = lines.next().unwrap().split(", ").collect_vec();
 
-    towels.sort();
+    let mut trie = TrieNode::new();
+
+    for towel in lines.next().unwrap().split(", ") {
+        trie.insert(towel);
+    }
 
     lines.next();
 
     let mut memo = HashMap::new();
 
-    let response = lines
-        .map(|line| doable_count(line, &towels, &mut memo))
-        .sum();
+    let response = lines.map(|line| doable_count(line, &trie, &mut memo)).sum();
 
     Some(response)
 }
