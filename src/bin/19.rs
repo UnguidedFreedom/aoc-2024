@@ -1,4 +1,3 @@
-use itertools::Itertools;
 use std::collections::HashMap;
 
 advent_of_code::solution!(19);
@@ -33,16 +32,21 @@ impl TrieNode {
     }
 }
 
-fn doable(line: &str, towels: &[&str]) -> bool {
+fn doable(line: &str, towels: &TrieNode) -> bool {
     if line.is_empty() {
         return true;
     }
 
-    for &towel in towels {
-        if let Some(stripped) = line.strip_prefix(towel) {
-            if doable(stripped, towels) {
+    let mut trie = towels;
+
+    for (i, char) in line.chars().enumerate() {
+        if let Some(node) = trie.get(char) {
+            if node.is_word() && doable(&line[i + 1..], towels) {
                 return true;
             }
+            trie = node;
+        } else {
+            return false;
         }
     }
 
@@ -51,11 +55,14 @@ fn doable(line: &str, towels: &[&str]) -> bool {
 
 pub fn part_one(input: &str) -> Option<u64> {
     let mut lines = input.lines();
-    let towels = lines.next().unwrap().split(", ").collect_vec();
 
+    let mut trie = TrieNode::new();
+    for towel in lines.next().unwrap().split(", ") {
+        trie.insert(towel);
+    }
     lines.next();
 
-    let response = lines.filter(|line| doable(line, &towels)).count() as u64;
+    let response = lines.filter(|line| doable(line, &trie)).count() as u64;
 
     Some(response)
 }
@@ -93,7 +100,6 @@ pub fn part_two(input: &str) -> Option<u64> {
     let mut lines = input.lines();
 
     let mut trie = TrieNode::new();
-
     for towel in lines.next().unwrap().split(", ") {
         trie.insert(towel);
     }
