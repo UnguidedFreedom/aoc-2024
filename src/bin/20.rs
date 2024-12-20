@@ -1,4 +1,5 @@
 use itertools::Itertools;
+use rayon::prelude::*;
 
 advent_of_code::solution!(20);
 
@@ -144,21 +145,20 @@ pub fn part_two(input: &str) -> Option<u64> {
         }
     }
 
-    let mut response = 0;
-
-    for (d1, &(i1, j1)) in path.iter().enumerate() {
-        for (d2, &(i2, j2)) in path.iter().enumerate().skip(d1 + 100 + 2) {
-            let cheat_size = ((i1 - i2).abs() + (j1 - j2).abs()) as usize;
-            if cheat_size > 20 {
-                continue;
-            }
-
-            let savings = d2 - d1 - cheat_size;
-            if savings >= 100 {
-                response += 1;
-            }
-        }
-    }
+    let response = path
+        .par_iter()
+        .enumerate()
+        .map(|(d1, &(i1, j1))| {
+            path.iter()
+                .enumerate()
+                .skip(d1 + 100 + 2)
+                .filter(|(d2, &(i2, j2))| {
+                    let cheat_size = ((i1 - i2).abs() + (j1 - j2).abs()) as usize;
+                    cheat_size <= 20 && d2 - d1 - cheat_size >= 100
+                })
+                .count() as u64
+        })
+        .sum();
 
     Some(response)
 }
