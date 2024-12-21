@@ -1,7 +1,6 @@
 #![feature(iter_map_windows)]
 
 use ::phf::{phf_map, Map};
-use itertools::Itertools;
 use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::iter;
@@ -92,14 +91,12 @@ fn presses(input: String, depth: usize, memo: &mut HashMap<(String, usize), u64>
         return result;
     }
 
-    let mut seq = "A".to_string();
-    seq.push_str(input.as_str());
-
+    let seq = "A".to_owned() + &input;
     let result = seq
         .chars()
         .map_windows(|&[a, b]| {
-            let tmp = sequences(a, b, &DIR_POS, (0, 0));
-            tmp.into_iter()
+            sequences(a, b, &DIR_POS, (0, 0))
+                .into_iter()
                 .map(|s| presses(s, depth - 1, memo))
                 .min()
                 .unwrap()
@@ -111,18 +108,13 @@ fn presses(input: String, depth: usize, memo: &mut HashMap<(String, usize), u64>
 }
 
 fn solve_for_line(line: &str, depth: usize, memo: &mut HashMap<(String, usize), u64>) -> u64 {
-    let mut seq = "A".to_string();
-    seq.push_str(line);
+    let seq = "A".to_owned() + line;
 
-    let possible_sequences = seq
+    let min_len = seq
         .chars()
-        .map_windows(|&[a, b]| sequences(a, b, &NUM_POS, (3, 0)))
-        .collect_vec();
-
-    let min_len = possible_sequences
-        .into_iter()
-        .map(|v| {
-            v.into_iter()
+        .map_windows(|&[a, b]| {
+            sequences(a, b, &NUM_POS, (3, 0))
+                .into_iter()
                 .map(|s| presses(s, depth, memo))
                 .min()
                 .unwrap()
@@ -134,26 +126,23 @@ fn solve_for_line(line: &str, depth: usize, memo: &mut HashMap<(String, usize), 
     code_num * min_len
 }
 
-pub fn part_one(input: &str) -> Option<u64> {
+fn solve(input: &str, depth: usize) -> Option<u64> {
     let mut memo = HashMap::new();
 
     let result = input
         .lines()
-        .map(|line| solve_for_line(line, 2, &mut memo))
+        .map(|line| solve_for_line(line, depth, &mut memo))
         .sum();
 
     Some(result)
 }
 
+pub fn part_one(input: &str) -> Option<u64> {
+    solve(input, 2)
+}
+
 pub fn part_two(input: &str) -> Option<u64> {
-    let mut memo = HashMap::new();
-
-    let result = input
-        .lines()
-        .map(|line| solve_for_line(line, 25, &mut memo))
-        .sum();
-
-    Some(result)
+    solve(input, 25)
 }
 
 #[cfg(test)]
