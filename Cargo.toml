@@ -33,3 +33,4 @@ regex = "1.11.1"
 itertools = "0.13.0"
 rayon = "1.10.0"
 priority-queue = "2.1.1"
+phf = { version = "0.11", features = ["macros"] }
