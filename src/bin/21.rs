@@ -46,15 +46,20 @@ fn apply_horiz(result: &mut String, dj: isize) {
     }
 }
 
-fn digit_sequence(source: char, dest: char) -> Vec<String> {
-    let &(i1, j1) = NUM_POS.get(&source).unwrap();
-    let &(i2, j2) = NUM_POS.get(&dest).unwrap();
+fn sequences(
+    source: char,
+    dest: char,
+    map: &Map<char, (isize, isize)>,
+    forbidden: (isize, isize),
+) -> Vec<String> {
+    let &(i1, j1) = map.get(&source).unwrap();
+    let &(i2, j2) = map.get(&dest).unwrap();
 
     let (di, dj) = (i2 - i1, j2 - j1);
 
     let mut result = Vec::new();
 
-    if (i1 + di, j1) != (3, 0) {
+    if (i1 + di, j1) != forbidden {
         let mut seq = String::new();
         apply_vert(&mut seq, di);
         apply_horiz(&mut seq, dj);
@@ -62,7 +67,7 @@ fn digit_sequence(source: char, dest: char) -> Vec<String> {
         result.push(seq);
     }
 
-    if (i1, j1 + dj) != (3, 0) {
+    if (i1, j1 + dj) != forbidden {
         let mut seq = String::new();
         apply_horiz(&mut seq, dj);
         apply_vert(&mut seq, di);
@@ -76,127 +81,79 @@ fn digit_sequence(source: char, dest: char) -> Vec<String> {
     result
 }
 
-fn arrow_sequence(source: char, dest: char) -> String {
-    let &(i1, j1) = DIR_POS.get(&source).unwrap();
-    let &(i2, j2) = DIR_POS.get(&dest).unwrap();
-
-    let (di, dj) = (i2 - i1, j2 - j1);
-
-    let mut seq = String::new();
-
-    if (i1 + di, j1) != (0, 0) {
-        apply_vert(&mut seq, di);
-        apply_horiz(&mut seq, dj);
-    } else {
-        apply_horiz(&mut seq, dj);
-        apply_vert(&mut seq, di);
+fn presses(input: String, depth: usize, memo: &mut HashMap<(String, usize), u64>) -> u64 {
+    if depth == 0 {
+        return input.len() as u64;
     }
 
-    seq.push('A');
-    seq
-}
+    let key = (input.clone(), depth);
 
-fn next_arrow(input: String, memo: &mut HashMap<String, Vec<String>>) -> Vec<String> {
-    if let Some(res) = memo.get(&input) {
-        return res.clone();
+    if let Some(&result) = memo.get(&key) {
+        return result;
     }
 
     let mut seq = "A".to_string();
-    seq.push_str(input.clone().as_str());
+    seq.push_str(input.as_str());
 
-    let output = seq
+    let result = seq
         .chars()
-        .map_windows(|&[a, b]| arrow_sequence(a, b))
-        .collect_vec();
+        .map_windows(|&[a, b]| {
+            let tmp = sequences(a, b, &DIR_POS, (0, 0));
+            tmp.into_iter()
+                .map(|s| presses(s, depth - 1, memo))
+                .min()
+                .unwrap()
+        })
+        .sum();
 
-    memo.insert(input, output.clone());
-    output
-}
-
-fn next_arrows(input: Vec<String>, memo: &mut HashMap<String, Vec<String>>) -> Vec<String> {
-    input
-        .into_iter()
-        .flat_map(|s| next_arrow(s, memo))
-        .collect_vec()
-}
-
-fn into_possibles(input: &Vec<Vec<String>>) -> Vec<String> {
-    let combos = input.iter().map(|x| x.len()).product::<usize>();
-
-    let mut result = Vec::new();
-
-    for k in 0..combos {
-        let mut k2 = k;
-        let mut val = String::new();
-        for v in input {
-            let l = v.len();
-            let i = k2 % l;
-            k2 /= l;
-            val.push_str(v[i].as_str());
-        }
-
-        result.push(val);
-    }
-
+    memo.insert(key, result);
     result
 }
 
-fn vec_len(input: &[String]) -> usize {
-    input.iter().map(|s| s.len()).sum::<usize>()
+fn solve_for_line(line: &str, depth: usize, memo: &mut HashMap<(String, usize), u64>) -> u64 {
+    let mut seq = "A".to_string();
+    seq.push_str(line);
+
+    let possible_sequences = seq
+        .chars()
+        .map_windows(|&[a, b]| sequences(a, b, &NUM_POS, (3, 0)))
+        .collect_vec();
+
+    let min_len = possible_sequences
+        .into_iter()
+        .map(|v| {
+            v.into_iter()
+                .map(|s| presses(s, depth, memo))
+                .min()
+                .unwrap()
+        })
+        .sum::<u64>();
+
+    let code_num = line[0..3].parse::<u64>().unwrap();
+
+    code_num * min_len
 }
 
 pub fn part_one(input: &str) -> Option<u64> {
-    let lines = input.lines().collect_vec();
+    let mut memo = HashMap::new();
 
-    let result = lines
-        .iter()
-        .map(|&line| {
-            let mut seq = "A".to_string();
-            seq.push_str(line);
-
-            let output = seq
-                .chars()
-                .map_windows(|&[a, b]| digit_sequence(a, b))
-                .collect_vec();
-
-            // go one level to be within the realm of automation
-
-            let mut sources = into_possibles(&output)
-                .into_iter()
-                .map(|poss| {
-                    let mut seq = "A".to_string();
-                    seq.push_str(poss.as_str());
-
-                    seq.chars()
-                        .map_windows(|&[a, b]| arrow_sequence(a, b))
-                        .collect_vec()
-                })
-                .collect_vec();
-
-            let mut memo = HashMap::new();
-
-            sources = sources
-                .into_iter()
-                .map(|source| next_arrows(source, &mut memo))
-                .collect_vec();
-
-            let shortest = sources
-                .into_iter()
-                .min_by(|v1, v2| vec_len(v1).cmp(&vec_len(v2)))
-                .unwrap();
-
-            let min_len = vec_len(&shortest);
-            let code_num = line[0..3].parse::<u64>().unwrap();
-
-            code_num * min_len as u64
-        })
+    let result = input
+        .lines()
+        .map(|line| solve_for_line(line, 2, &mut memo))
         .sum();
 
     Some(result)
 }
 
 pub fn part_two(input: &str) -> Option<u64> {
-    None
+    let mut memo = HashMap::new();
+
+    let result = input
+        .lines()
+        .map(|line| solve_for_line(line, 25, &mut memo))
+        .sum();
+
+    Some(result)
 }
 
 #[cfg(test)]
@@ -212,6 +169,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(154115708116294));
     }
 }
