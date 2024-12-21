@@ -149,7 +149,7 @@ pub fn part_two(input: &str) -> Option<u64> {
         .par_iter()
         .enumerate()
         .map(|(d1, &(i1, j1))| {
-            path.iter()
+            path.par_iter()
                 .enumerate()
                 .skip(d1 + 100 + 2)
                 .filter(|(d2, &(i2, j2))| {
