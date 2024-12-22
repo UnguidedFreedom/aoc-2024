@@ -3,6 +3,7 @@
 use itertools::Itertools;
 use rayon::prelude::*;
 use std::collections::HashMap;
+use std::sync::RwLock;
 
 advent_of_code::solution!(22);
 
@@ -41,13 +42,9 @@ pub fn part_two(input: &str) -> Option<u64> {
         .map(|s| s.parse::<u64>().unwrap())
         .collect_vec();
 
-    let n = starts.len();
+    let sequences = RwLock::new(HashMap::new());
 
-    let mut sequences = HashMap::new();
-
-    // TODO: generate individual hashmaps and merge them at the end?
-
-    for (i, &start) in starts.iter().enumerate() {
+    starts.into_par_iter().for_each(|start| {
         let mut values = vec![start];
         let mut val = start;
         for _ in 0..2000 {
@@ -61,21 +58,26 @@ pub fn part_two(input: &str) -> Option<u64> {
 
         let seqs = diffs.map_windows(|&[a, b, c, d]| (a, b, c, d));
 
+        let mut local_sequences: HashMap<(i64, i64, i64, i64), u64> = HashMap::new();
+
         for (j, seq) in seqs.enumerate() {
-            let entry = sequences.entry(seq).or_insert(vec![None; n]);
-            if entry[i].is_none() {
-                entry[i] = Some(values[j + 4]);
+            if local_sequences.contains_key(&seq) {
+                continue;
             }
+
+            local_sequences.insert(seq, values[j + 4] as u64);
         }
-    }
 
-    let max = sequences
-        .par_iter()
-        .map(|(_, vals)| vals.iter().flatten().sum::<i64>())
-        .max()
-        .unwrap() as u64;
+        let mut this_sequences = sequences.write().unwrap();
+        for (seq, val) in local_sequences {
+            *this_sequences.entry(seq).or_default() += val;
+        }
+    });
 
-    Some(max)
+    let this_sequences = sequences.read().unwrap();
+    let max = this_sequences.values().max().unwrap();
+
+    Some(*max)
 }
 
 #[cfg(test)]
