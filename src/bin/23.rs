@@ -47,19 +47,19 @@ pub fn part_one(input: &str) -> Option<u64> {
 }
 
 fn evaluate<'a>(
-    so_far: &Vec<&'a str>,
+    so_far: &[&'a str],
     candidates: &HashSet<&'a str>,
     conns: &HashMap<&'a str, HashSet<&'a str>>,
 ) -> Vec<&'a str> {
-    let mut longest = so_far.clone();
-    let last = *so_far.last().unwrap();
-    for &candidate in candidates.iter().filter(|&&x| x > last) {
+    let mut longest = so_far.to_owned();
+    for &candidate in candidates {
         let intersection = candidates
             .intersection(&conns[candidate])
+            .filter(|&&v| v > candidate)
             .copied()
             .collect::<HashSet<&str>>();
 
-        let mut sf2 = so_far.clone();
+        let mut sf2 = so_far.to_owned();
         sf2.push(candidate);
 
         let result = evaluate(&sf2, &intersection, conns);
@@ -85,7 +85,16 @@ pub fn part_two(input: &str) -> Option<String> {
 
     let longest = conns
         .iter()
-        .map(|(&key, val)| evaluate(&vec![key], val, &conns))
+        .map(|(&key, val)| {
+            evaluate(
+                &[key],
+                &val.iter()
+                    .filter(|&&v| v > key)
+                    .copied()
+                    .collect::<HashSet<&str>>(),
+                &conns,
+            )
+        })
         .max_by(|s1, s2| s1.len().cmp(&s2.len()))
         .unwrap();
 
