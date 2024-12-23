@@ -42,7 +42,7 @@ pub fn part_two(input: &str) -> Option<u64> {
         .map(|s| s.parse::<u64>().unwrap())
         .collect_vec();
 
-    let sequences = RwLock::new(HashMap::new());
+    let sequences = RwLock::new(HashMap::with_capacity(5000));
 
     starts.into_par_iter().for_each(|start| {
         let mut values = vec![start];
@@ -52,20 +52,16 @@ pub fn part_two(input: &str) -> Option<u64> {
             values.push(val);
         }
 
-        let values = values.into_iter().map(|x| (x % 10) as i64).collect_vec();
+        let seqs = values
+            .iter()
+            .map(|x| (x % 10) as i64)
+            .map_windows(|&[a, b]| b - a)
+            .map_windows(|&[a, b, c, d]| (a, b, c, d));
 
-        let diffs = values.iter().map_windows(|&[&a, &b]| b - a);
-
-        let seqs = diffs.map_windows(|&[a, b, c, d]| (a, b, c, d));
-
-        let mut local_sequences: HashMap<(i64, i64, i64, i64), u64> = HashMap::new();
+        let mut local_sequences: HashMap<(i64, i64, i64, i64), u64> = HashMap::with_capacity(2000);
 
         for (j, seq) in seqs.enumerate() {
-            if local_sequences.contains_key(&seq) {
-                continue;
-            }
-
-            local_sequences.insert(seq, values[j + 4] as u64);
+            local_sequences.entry(seq).or_insert(values[j + 4] % 10);
         }
 
         let mut this_sequences = sequences.write().unwrap();
