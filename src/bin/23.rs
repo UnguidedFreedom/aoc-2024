@@ -2,6 +2,7 @@
 extern crate core;
 
 use itertools::Itertools;
+use rayon::prelude::*;
 use std::collections::{HashMap, HashSet};
 
 advent_of_code::solution!(23);
@@ -89,7 +90,7 @@ pub fn part_two(input: &str) -> Option<String> {
     }
 
     let longest = conns
-        .iter()
+        .par_iter()
         .map(|(&key, val)| evaluate(&[key], val, &conns))
         .max_by(|s1, s2| s1.len().cmp(&s2.len()))
         .unwrap();
