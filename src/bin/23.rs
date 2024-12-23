@@ -54,15 +54,9 @@ fn evaluate<'a>(
     let mut longest = so_far.clone();
     let last = *so_far.last().unwrap();
     for &candidate in candidates.iter().filter(|&&x| x > last) {
-        let contenders = &conns[candidate];
-
-        if contenders.len() < so_far.len() || !so_far.iter().all(|s| contenders.contains(s)) {
-            continue;
-        }
-
         let intersection = candidates
-            .intersection(contenders)
-            .cloned()
+            .intersection(&conns[candidate])
+            .copied()
             .collect::<HashSet<&str>>();
 
         let mut sf2 = so_far.clone();
@@ -91,10 +85,7 @@ pub fn part_two(input: &str) -> Option<String> {
 
     let longest = conns
         .iter()
-        .map(|(&key, val)| {
-            let so_far = vec![key];
-            evaluate(&so_far, val, &conns)
-        })
+        .map(|(&key, val)| evaluate(&vec![key], val, &conns))
         .max_by(|s1, s2| s1.len().cmp(&s2.len()))
         .unwrap();
 
