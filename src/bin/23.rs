@@ -53,18 +53,20 @@ fn evaluate<'a>(
 ) -> Vec<&'a str> {
     let mut longest = so_far.to_owned();
     for &candidate in candidates {
-        let intersection = candidates
-            .intersection(&conns[candidate])
-            .filter(|&&v| v > candidate)
-            .copied()
-            .collect::<HashSet<&str>>();
-
         let mut sf2 = so_far.to_owned();
         sf2.push(candidate);
 
-        let result = evaluate(&sf2, &intersection, conns);
-        if result.len() > longest.len() {
-            longest = result;
+        if let Some(vals) = conns.get(&candidate) {
+            let intersection = candidates
+                .intersection(vals)
+                .copied()
+                .collect::<HashSet<&str>>();
+
+            sf2 = evaluate(&sf2, &intersection, conns);
+        }
+
+        if sf2.len() > longest.len() {
+            longest = sf2;
         }
     }
     longest
@@ -79,22 +81,16 @@ pub fn part_two(input: &str) -> Option<String> {
     let mut conns: HashMap<&str, HashSet<&str>> = HashMap::new();
 
     for &(a, b) in data.iter() {
-        conns.entry(a).or_default().insert(b);
-        conns.entry(b).or_default().insert(a);
+        if a < b {
+            conns.entry(a).or_default().insert(b);
+        } else {
+            conns.entry(b).or_default().insert(a);
+        }
     }
 
     let longest = conns
         .iter()
-        .map(|(&key, val)| {
-            evaluate(
-                &[key],
-                &val.iter()
-                    .filter(|&&v| v > key)
-                    .copied()
-                    .collect::<HashSet<&str>>(),
-                &conns,
-            )
-        })
+        .map(|(&key, val)| evaluate(&[key], val, &conns))
         .max_by(|s1, s2| s1.len().cmp(&s2.len()))
         .unwrap();
 
